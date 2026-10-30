@@ -7,11 +7,9 @@ export async function POST(req: Request) {
 
     // Extract the track path (e.g., "alorg/song/wowo")
     let match = url.match(/audiomack\.com\/([^/]+)\/song\/([^/?#]+)/);
-    
     if (!match) {
       match = url.match(/audiomack\.com\/song\/([^/]+)\/([^/?#]+)/);
     }
-
     if (!match) {
       throw new Error("Invalid Audiomack URL. Please provide a direct song link.");
     }
@@ -19,39 +17,73 @@ export async function POST(req: Request) {
     const artist = match[1];
     const songSlug = match[2];
     const trackPath = `${artist}/song/${songSlug}`;
+    const fullUrl = `https://www.audiomack.com/${trackPath}`;
 
-    // Use the non-www host and add a timestamp to prevent caching/blocking
+    // 1. Try the unofficial API first (using www.audiomack.com)
     const timestamp = Date.now();
-    const apiUrl = `http://audiomack.com/api/music/url/song/${trackPath}?extended=1&_=${timestamp}`;
+    const apiUrl = `http://www.audiomack.com/api/music/url/song/${trackPath}?extended=1&_=${timestamp}`;
 
-    const apiRes = await fetch(apiUrl, {
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "application/json",
-        "Referer": "https://audiomack.com/",
-      },
-    });
+    let audioUrl: string | null = null;
+    let thumbnail = "";
 
-    if (!apiRes.ok) {
-      const errorText = await apiRes.text();
-      throw new Error(`Audiomack responded with ${apiRes.status}: ${errorText.substring(0, 100)}`);
+    try {
+      const apiRes = await fetch(apiUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "application/json",
+          "Referer": fullUrl,
+        },
+      });
+
+      if (apiRes.ok) {
+        const data = await apiRes.json();
+        if (data.url) {
+          audioUrl = data.url;
+          thumbnail = data.image || "";
+        }
+      }
+    } catch {
+      // API failed, fall through to HTML extraction
     }
 
-    const data = await apiRes.json();
+    // 2. Fallback: extract the MP3 URL directly from the HTML page
+    if (!audioUrl) {
+      const pageRes = await fetch(fullUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        },
+      });
 
-    if (!data.url) {
+      if (!pageRes.ok) {
+        throw new Error("Could not reach Audiomack. The song may be private or deleted.");
+      }
+
+      const html = await pageRes.text();
+
+      // Look for the direct MP3 URL in the page source
+      const mp3Match = html.match(/"audio_url":"(https?:\/\/[^"]+\.mp3[^"]*)"/) ||
+                       html.match(/"url":"(https?:\/\/[^"]+\.mp3[^"]*)"/) ||
+                       html.match(/(https?:\/\/[^"']+\.mp3[^"']*)/);
+
+      if (mp3Match && mp3Match[1]) {
+        audioUrl = mp3Match[1].replace(/\\u0026/g, "&").replace(/\\\//g, "/");
+      }
+    }
+
+    if (!audioUrl) {
       throw new Error("Could not extract the audio URL from Audiomack.");
     }
 
+    // Clean up the title and artist from the URL slug
     const title = songSlug.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
     const author = artist.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
 
     return NextResponse.json({
       title,
       author,
-      thumbnail: data.image || "",
-      videoUrl: data.url,
-      audioUrl: data.url,
+      thumbnail,
+      videoUrl: audioUrl,
+      audioUrl: audioUrl,
       platform: "audiomack",
       audioPending: false,
       kind: "video",
