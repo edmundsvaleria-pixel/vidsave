@@ -5,11 +5,9 @@ export async function POST(req: Request) {
   try {
     const { url } = await req.json();
 
-    // Extract the track path (e.g., "skyzen-1/song/veki-veki")
-    // Audiomack URLs can be: audiomack.com/artist/song/title OR audiomack.com/song/artist/title
+    // Extract the track path (e.g., "alorg/song/wowo")
     let match = url.match(/audiomack\.com\/([^/]+)\/song\/([^/?#]+)/);
     
-    // Fallback for URLs like audiomack.com/song/artist/title
     if (!match) {
       match = url.match(/audiomack\.com\/song\/([^/]+)\/([^/?#]+)/);
     }
@@ -22,15 +20,21 @@ export async function POST(req: Request) {
     const songSlug = match[2];
     const trackPath = `${artist}/song/${songSlug}`;
 
-    // Call Audiomack's public playback API (no auth required)
-    const apiRes = await fetch(`https://www.audiomack.com/api/music/url/song/${trackPath}`, {
+    // Use the non-www host and add a timestamp to prevent caching/blocking
+    const timestamp = Date.now();
+    const apiUrl = `http://audiomack.com/api/music/url/song/${trackPath}?extended=1&_=${timestamp}`;
+
+    const apiRes = await fetch(apiUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/json",
+        "Referer": "https://audiomack.com/",
       },
     });
 
     if (!apiRes.ok) {
-      throw new Error("Could not reach Audiomack. The song may be private or deleted.");
+      const errorText = await apiRes.text();
+      throw new Error(`Audiomack responded with ${apiRes.status}: ${errorText.substring(0, 100)}`);
     }
 
     const data = await apiRes.json();
@@ -39,19 +43,18 @@ export async function POST(req: Request) {
       throw new Error("Could not extract the audio URL from Audiomack.");
     }
 
-    // Clean up the title and artist from the URL slug
     const title = songSlug.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
     const author = artist.replace(/-/g, " ").replace(/\b\w/g, (c: string) => c.toUpperCase());
 
     return NextResponse.json({
       title,
       author,
-      thumbnail: "", // Audiomack API doesn't return a thumbnail in this endpoint
+      thumbnail: data.image || "",
       videoUrl: data.url,
       audioUrl: data.url,
       platform: "audiomack",
       audioPending: false,
-      kind: "video", // We use "video" kind so the UI renders correctly (it's handled as audio)
+      kind: "video",
       items: [],
       formats: null,
     });
