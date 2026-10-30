@@ -6,7 +6,6 @@ import { useSearchParams } from "next/navigation";
 import JobCard, { type Job } from "@/components/JobCard";
 import PlatformIcons from "@/components/PlatformIcons";
 import RecentDownloads from "@/components/RecentDownloads";
-import { useIsland } from "@/components/island/IslandContext";
 import type { VideoResult } from "@/lib/videoApi";
 
 function makeJob(url = ""): Job {
@@ -30,7 +29,6 @@ function saveRecent(url: string) {
 function HomeContent() {
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>(() => [makeJob()]);
-  const { setState, clearState } = useIsland();
 
   useEffect(() => {
     const sharedUrl = searchParams.get("url") || searchParams.get("text");
@@ -64,7 +62,6 @@ function HomeContent() {
     }
 
     updateJob(id, { loading: true, error: null, result: null });
-    setState({ type: "loading", message: urls.length > 1 ? `Processing ${urls.length} links...` : "Extracting video..." });
 
     try {
       const res = await fetch("/api/fetch", {
@@ -75,15 +72,12 @@ function HomeContent() {
       const data = await res.json();
       if (!res.ok) {
         updateJob(id, { loading: false, error: data?.error ?? "Could not fetch video." });
-        setState({ type: "error", message: data?.error ?? "Download failed." });
         return;
       }
       updateJob(id, { loading: false, result: data as VideoResult });
       saveRecent(urls[0]);
-      setState({ type: "success", message: "Video ready" });
     } catch {
       updateJob(id, { loading: false, error: "Network error. Try again." });
-      setState({ type: "error", message: "Network error. Try again." });
     }
   }
 
@@ -115,7 +109,6 @@ function HomeContent() {
       </header>
 
       <main className="relative z-10 mx-auto max-w-3xl px-6 pt-40 pb-24 text-center">
-        {/* Badge removed, just the clean headline */}
         <h1 className="display mx-auto text-[56px] leading-[1] tracking-[-0.03em] text-white sm:text-[72px]">
           Download videos <br />
           <span className="text-[#A1A1AA]">from anywhere.</span>
@@ -132,7 +125,7 @@ function HomeContent() {
                 job={job}
                 onUrlChange={(u) => updateJob(job.id, { url: u })}
                 onSubmit={() => submitJob(job.id)}
-                onReset={() => { resetJob(job.id); clearState(); }}
+                onReset={() => resetJob(job.id)}
                 onAddAnother={addJob}
                 onRemove={idx > 0 ? () => removeJob(job.id) : undefined}
               />
