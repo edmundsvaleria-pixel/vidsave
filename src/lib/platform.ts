@@ -1,6 +1,4 @@
 // src/lib/platform.ts
-// Pure, dependency-free URL detection. Safe for client AND server.
-
 export type Platform =
   | "youtube"
   | "tiktok"
@@ -11,6 +9,8 @@ export type Platform =
   | "pinterest"
   | "rutube"
   | "likee"
+  | "audiomack" // <-- Added
+  | "spotify"   // <-- Added
   | "other";
 
 export const PLATFORM_LABELS: Record<Platform, string> = {
@@ -23,6 +23,8 @@ export const PLATFORM_LABELS: Record<Platform, string> = {
   pinterest: "Pinterest",
   rutube: "RuTube",
   likee: "Likee",
+  audiomack: "Audiomack",
+  spotify: "Spotify",
   other: "Unknown",
 };
 
@@ -40,11 +42,11 @@ export function detectPlatform(raw: string): Platform {
   if (host === "x.com" || host === "twitter.com") return "x";
   if (host.endsWith("facebook.com") || host === "fb.watch") return "facebook";
   if (host === "suno.com" || host === "app.suno.ai") return "suno";
-
-  // ── New platforms ────────────────────────────────────────
   if (host.endsWith("pinterest.com") || host === "pin.it") return "pinterest";
   if (host.endsWith("rutube.ru")) return "rutube";
   if (host.endsWith("likee.video")) return "likee";
+  if (host.endsWith("audiomack.com")) return "audiomack"; // <-- Added
+  if (host.endsWith("spotify.com")) return "spotify";     // <-- Added
 
   return "other";
 }

@@ -33,6 +33,7 @@ export type VideoResult = {
 
 const BASE = process.env.FASTSAVER_BASE_URL ?? "https://api.fastsaver.io/v1";
 const KEY = process.env.APIFY_API_TOKEN;
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
 
 function authHeaders(): Record<string, string> {
   if (!KEY) throw new Error("APIFY_API_TOKEN is not set in .env.local");
@@ -52,8 +53,7 @@ function normalizeYouTube(raw: string): string {
 
 function upstreamError(status: number, data: unknown): Error {
   const d = (data ?? {}) as Record<string, unknown>;
-  const msg =
-    (d.detail as string) || (d.reason as string) || (d.error as string) || (d.message as string) || `FastSaver returned ${status}`;
+  const msg = (d.detail as string) || (d.reason as string) || (d.error as string) || (d.message as string) || `FastSaver returned ${status}`;
   return new Error(msg);
 }
 
@@ -177,8 +177,21 @@ async function fetchUniversal(input: string): Promise<VideoResult> {
 
 export async function fetchVideoInfo(input: string): Promise<VideoResult> {
   const platform = detectPlatform(input);
+  
   if (platform === "suno") throw new Error("Suno downloads are temporarily unavailable. Try YouTube or TikTok.");
   if (platform === "youtube") return fetchYouTubeInfo(input);
+
+  if (platform === "audiomack" || platform === "spotify") {
+    const res = await fetch(`${SITE_URL}/api/fetch-${platform}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: input }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Failed to fetch ${platform}`);
+    return data as VideoResult;
+  }
+
   return fetchUniversal(input);
 }
 

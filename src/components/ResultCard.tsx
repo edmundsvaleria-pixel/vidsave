@@ -2,8 +2,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { BarChart2, Eraser } from "lucide-react";
 import type { VideoResult, QualityOption } from "@/lib/videoApi";
-import AffiliateLinks from "./AffiliateLinks";
 
 type Props = {
   result: VideoResult;
@@ -29,9 +29,8 @@ function pickDefaultFormat(formats: QualityOption[]): string {
   return formats[formats.length - 1]?.value ?? "";
 }
 
-// ── UPDATED: Proxy URL generator ──
 function getProxyUrl(url: string, title: string, type: "video" | "audio" | "image" = "video") {
-  const cleanTitle = title.substring(0, 30); // Keep filename short
+  const cleanTitle = title.substring(0, 30);
   return `/api/download-file?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(cleanTitle)}&type=${type}`;
 }
 
@@ -47,6 +46,7 @@ function triggerSave(url: string, title: string, type: "video" | "audio" | "imag
 
 export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, onRemove }: Props) {
   const isSuno = result.platform === "suno";
+  const isAudioOnly = isSuno || result.platform === "audiomack" || result.platform === "spotify";
   const isAlbum = result.kind === "album" && result.items.length > 1;
   const isYouTube = result.platform === "youtube" && !!result.formats?.length;
 
@@ -63,6 +63,13 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
+  // ── Pro Features State ──
+  const [metadataLoading, setMetadataLoading] = useState(false);
+  const [metadata, setMetadata] = useState<any>(null);
+  
+  const [textRemovalLoading, setTextRemovalLoading] = useState(false);
+  const [processedImage, setProcessedImage] = useState<string | null>(null);
+
   const selectedOpt = result.formats?.find((f) => f.value === selectedFormat);
   const audioHref = result.audioUrl ?? generatedAudio;
   const canGenerateAudio = !audioHref && result.audioPending && !isSuno;
@@ -77,25 +84,14 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
         body: JSON.stringify({ url: sourceUrl }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setAudioError(data?.error ?? "Could not extract audio.");
-        return;
-      }
+      if (!res.ok) { setAudioError(data?.error ?? "Could not extract audio."); return; }
       setGeneratedAudio(data.audioUrl as string);
-    } catch {
-      setAudioError("Network error. Try again.");
-    } finally {
-      setAudioLoading(false);
-    }
+    } catch { setAudioError("Network error. Try again."); } finally { setAudioLoading(false); }
   }
 
   async function handleYouTubeDownload() {
-    if (finalUrl) {
-      triggerSave(finalUrl, result.title, "video");
-      return;
-    }
-    setDlLoading(true);
-    setDlError(null);
+    if (finalUrl) { triggerSave(finalUrl, result.title, "video"); return; }
+    setDlLoading(true); setDlError(null);
     try {
       const res = await fetch("/api/download", {
         method: "POST",
@@ -103,29 +99,48 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
         body: JSON.stringify({ url: sourceUrl, format: selectedFormat }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setDlError(data?.error ?? "Download failed.");
-        return;
-      }
+      if (!res.ok) { setDlError(data?.error ?? "Download failed."); return; }
       setFinalUrl(data.videoUrl as string);
       triggerSave(data.videoUrl as string, result.title, "video");
-    } catch {
-      setDlError("Network error. Try again.");
-    } finally {
-      setDlLoading(false);
-    }
+    } catch { setDlError("Network error. Try again."); } finally { setDlLoading(false); }
   }
 
   async function handleDownloadAll() {
-    setDownloadingAll(true);
-    setDownloadProgress(0);
+    setDownloadingAll(true); setDownloadProgress(0);
     for (let i = 0; i < result.items.length; i++) {
       triggerSave(result.items[i].url, `${result.title}_${i + 1}`, result.items[i].type);
       setDownloadProgress(i + 1);
       await new Promise((resolve) => setTimeout(resolve, 1000)); 
     }
-    setDownloadingAll(false);
-    setDownloadProgress(0);
+    setDownloadingAll(false); setDownloadProgress(0);
+  }
+
+  // ── Pro Feature Handlers ──
+  async function handleGetMetadata() {
+    setMetadataLoading(true);
+    try {
+      const res = await fetch("/api/metadata", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url: sourceUrl }),
+      });
+      const data = await res.json();
+      if (res.ok) setMetadata(data.metadata);
+    } catch { /* ignore */ } finally { setMetadataLoading(false); }
+  }
+
+  async function handleRemoveText() {
+    if (!result.thumbnail) return;
+    setTextRemovalLoading(true);
+    try {
+      const res = await fetch("/api/remove-text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ imageUrl: result.thumbnail }),
+      });
+      const data = await res.json();
+      if (res.ok) setProcessedImage(data.processedImage);
+    } catch { /* ignore */ } finally { setTextRemovalLoading(false); }
   }
 
   const kindLabel = result.kind === "album" ? `Album — ${result.items.length} items` : result.kind === "image" ? "Image" : isSuno ? "Song" : "Video";
@@ -133,29 +148,25 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
   return (
     <div className="border border-[#27272A] bg-[#0A0A0A] rounded-xl p-6 w-full shadow-lg">
       <div className="mb-6 flex items-center justify-between">
-        <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-[#A1A1AA]">
-          Ready · {kindLabel}
-        </span>
+        <span className="text-[10px] uppercase tracking-[0.2em] font-medium text-[#A1A1AA]">Ready · {kindLabel}</span>
         <div className="flex gap-3">
-          <button onClick={onReset} className="text-[11px] font-medium text-[#A1A1AA] hover:text-white transition-colors">
-            ← New
-          </button>
-          {onRemove && (
-            <button onClick={onRemove} className="text-[16px] leading-none text-[#A1A1AA] hover:text-red-400 transition-colors">×</button>
-          )}
+          <button onClick={onReset} className="text-[11px] font-medium text-[#A1A1AA] hover:text-white transition-colors">← New</button>
+          {onRemove && <button onClick={onRemove} className="text-[16px] leading-none text-[#A1A1AA] hover:text-red-400 transition-colors">×</button>}
         </div>
       </div>
 
       <div className="flex flex-col gap-5 sm:flex-row">
-        {result.thumbnail && (
+        {(processedImage || result.thumbnail) && (
           <div className="w-full shrink-0 sm:w-40">
-            <div className="aspect-square overflow-hidden rounded-lg border border-[#27272A] bg-black sm:aspect-video">
+            <div className="aspect-square overflow-hidden rounded-lg border border-[#27272A] bg-black sm:aspect-video relative">
               <img
-                src={result.thumbnail}
-                alt=""
+                src={processedImage || result.thumbnail}
+                alt="Thumbnail"
                 className="h-full w-full object-cover"
-                onError={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = "0"; }}
               />
+              {processedImage && (
+                <div className="absolute top-2 right-2 bg-[#3B82F6] text-white text-[8px] font-bold px-2 py-1 rounded">TEXT REMOVED</div>
+              )}
             </div>
           </div>
         )}
@@ -172,11 +183,8 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
                     <p className="mb-2 text-[10px] font-medium uppercase tracking-[0.1em] text-[#A1A1AA]">Choose quality</p>
                     <div className="flex flex-wrap gap-1.5">
                       {result.formats!.map((f) => (
-                        <button
-                          key={f.value}
-                          onClick={() => { setSelectedFormat(f.value); setDlError(null); setFinalUrl(null); }}
-                          className={selectedFormat === f.value ? "border border-[#3B82F6] bg-[#3B82F6] px-3 py-1 text-[11px] font-semibold text-white transition-all" : "border border-[#27272A] px-3 py-1 text-[11px] font-semibold text-[#A1A1AA] transition-all hover:border-[#3B82F6]/50 hover:text-white"}
-                        >
+                        <button key={f.value} onClick={() => { setSelectedFormat(f.value); setDlError(null); setFinalUrl(null); }}
+                          className={selectedFormat === f.value ? "border border-[#3B82F6] bg-[#3B82F6] px-3 py-1 text-[11px] font-semibold text-white transition-all" : "border border-[#27272A] px-3 py-1 text-[11px] font-semibold text-[#A1A1AA] transition-all hover:border-[#3B82F6]/50 hover:text-white"}>
                           {f.label}
                         </button>
                       ))}
@@ -189,7 +197,7 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
                 </>
               )}
 
-              {!isYouTube && !isSuno && (
+              {!isYouTube && !isAudioOnly && (
                 <a href={getProxyUrl(result.videoUrl, result.title, "video")} download className="btn-primary flex h-11 w-full items-center justify-center gap-2">
                   <span>{result.kind === "image" ? "Download Image" : "Download MP4"}</span>
                   <span>↓</span>
@@ -208,6 +216,33 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
                   {audioLoading ? <><Spinner /> <span>Extracting…</span></> : <><span>Extract MP3</span><span>↓</span></>}
                 </button>
               )}
+
+              {/* ── PRO FEATURE BUTTONS ── */}
+              <div className="pt-4 mt-2 border-t border-[#27272A]">
+                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#A1A1AA] mb-3">Utilities</p>
+                <div className="flex gap-2">
+                  <button onClick={handleGetMetadata} disabled={metadataLoading} className="flex-1 flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
+                    {metadataLoading ? <Spinner size={12} /> : <BarChart2 size={13} className="text-[#3B82F6]" />}
+                    <span>Get Stats</span>
+                  </button>
+                  
+                  {result.thumbnail && (
+                    <button onClick={handleRemoveText} disabled={textRemovalLoading} className="flex-1 flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
+                      {textRemovalLoading ? <Spinner size={12} /> : <Eraser size={13} className="text-[#3B82F6]" />}
+                      <span>Remove Text</span>
+                    </button>
+                  )}
+                </div>
+                
+                {/* Metadata Display */}
+                {metadata && (
+                  <div className="mt-3 bg-[#141416] border border-[#27272A] rounded-lg p-3 text-[11px] text-[#A1A1AA]">
+                    <p><strong className="text-white">Views:</strong> {metadata.views?.toLocaleString() || "N/A"}</p>
+                    <p><strong className="text-white">Likes:</strong> {metadata.likes?.toLocaleString() || "N/A"}</p>
+                  </div>
+                )}
+              </div>
+
             </div>
           )}
         </div>
@@ -241,10 +276,8 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
         </div>
       )}
 
-      {!isSuno && !isAlbum && <AffiliateLinks />}
-
       {onAddAnother && (
-        <button onClick={onAddAnother} className="mt-4 flex w-full items-center justify-center rounded-lg border border-dashed border-[#27272A] py-3 text-[11px] uppercase tracking-[0.1em] text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/50 hover:text-white">
+        <button onClick={onAddAnother} className="mt-6 flex w-full items-center justify-center rounded-lg border border-dashed border-[#27272A] py-3 text-[11px] uppercase tracking-[0.1em] text-[#A1A1AA] transition-colors hover:border-[#3B82F6]/50 hover:text-white">
           + Download another video
         </button>
       )}
