@@ -11,8 +11,7 @@ export async function POST(req: Request) {
     }
 
     const { plan } = await req.json();
-    // Amounts in the lowest currency unit (e.g., pesewas for GHS, cents for USD)
-    // Example: GHS 39.00 = 3900
+    // Amounts in pesewas (GHS 39.90 = 3990)
     const amount = plan === "pro" ? 3990 : 9990; 
 
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -24,7 +23,7 @@ export async function POST(req: Request) {
       body: JSON.stringify({
         email: user.email,
         amount,
-        currency: "GHS", // Change to your local currency
+        currency: "GHS",
         metadata: {
           user_id: user.id,
           plan: plan,

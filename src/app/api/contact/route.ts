@@ -2,15 +2,13 @@
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
-export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
-
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
   try {
     const { email, message } = await request.json();
 
+    // 1. Validate inputs
     if (!email || !message) {
       return NextResponse.json(
         { error: "Email and message are required." },
@@ -18,14 +16,22 @@ export async function POST(request: Request) {
       );
     }
 
-    // âš ï¸ IMPORTANT: This MUST be the email you signed up to Resend with.
-    const toEmail = "ygakharter@gmail.com"; 
+    // 2. Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return NextResponse.json(
+        { error: "Please provide a valid email address." },
+        { status: 400 }
+      );
+    }
 
-    const { data, error } = await resend.emails.send({
-      to: toEmail,
+    // 3. Send email via Resend
+    const data = await resend.emails.send({
+      // This is where the email will arrive (YOUR GMAIL):
+      to: "edmundsvaleria@gmail.com", 
       
-      // âš ï¸ Using your specific Resend test domain
-      from: "SwiftSave Contact <anything@uutreneozo.resend.app>", 
+      // This is your newly verified custom domain
+      from: "SwiftSave Contact <hello@swiftsave.online>",
       
       subject: `New SwiftSave Message from ${email}`,
       html: `
@@ -40,16 +46,11 @@ export async function POST(request: Request) {
       `,
     });
 
-    if (error) {
-      console.error("Resend API Error:", error);
-      return NextResponse.json({ error: error.message }, { status: 400 });
-    }
-
     return NextResponse.json({ success: true, data }, { status: 200 });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Contact form error:", error);
     return NextResponse.json(
-      { error: "Failed to send message. Please try again later." },
+      { error: error.message || "Failed to send message. Please try again later." },
       { status: 500 }
     );
   }
