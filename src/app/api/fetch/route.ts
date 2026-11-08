@@ -1,12 +1,9 @@
 // src/app/api/fetch/route.ts
-// POST /api/fetch  { url }  ->  VideoResult
-//
-// Pipeline: rate limit -> reject profile URLs -> cache -> FastSaver -> cache store
-
 import { NextRequest, NextResponse } from "next/server";
 import { fetchVideoInfo, type VideoResult } from "@/lib/videoApi";
 import { rateLimit } from "@/lib/rateLimit";
 import { cacheGet, cacheSet, DEFAULT_TTL_MS } from "@/lib/cache";
+import { checkAndIncrementQuota } from "@/lib/quota";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,7 +27,6 @@ function isProfileUrl(raw: string): boolean {
     const host = u.hostname.replace(/^www\./, "").toLowerCase();
     const path = u.pathname.replace(/^\/+/, "");
 
-    // ── Instagram ──
     if (host.endsWith("instagram.com")) {
       if (
         path.startsWith("p/") ||
@@ -43,18 +39,13 @@ function isProfileUrl(raw: string): boolean {
       return true;
     }
 
-    // ── TikTok ──
     if (host.endsWith("tiktok.com")) {
-      // Allow short share links explicitly
       if (host === "vm.tiktok.com" || host === "vt.tiktok.com") return false;
-      // Allow standard video URLs
       if (path.startsWith("@") && path.includes("/video/")) return false;
-      // Allow other short formats
       if (path.startsWith("t/") || path.startsWith("v/")) return false;
       return true;
     }
 
-    // ── Facebook ──
     if (host.endsWith("facebook.com") || host === "fb.watch") {
       if (host === "fb.watch") return false;
       if (
@@ -110,7 +101,6 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. Reject profile URLs early (0 credits spent)
   if (isProfileUrl(url)) {
     return NextResponse.json(
       {
@@ -119,6 +109,12 @@ export async function POST(request: NextRequest) {
       },
       { status: 400 },
     );
+  }
+
+  // 3. CHECK QUOTA
+  const quota = await checkAndIncrementQuota();
+  if (!quota.allowed) {
+    return NextResponse.json({ error: quota.error }, { status: 403 });
   }
 
   // 4. Cache
@@ -131,7 +127,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 5. Upstream
+  // 5. Upstream (FastSaver)
   try {
     const result = await fetchVideoInfo(url);
     cacheSet(cacheKey, result, DEFAULT_TTL_MS);
