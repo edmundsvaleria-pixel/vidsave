@@ -4,6 +4,7 @@
 import { FormEvent } from "react";
 import DownloadCard from "./DownloadCard";
 import ResultCard from "./ResultCard";
+import ResultCardSkeleton from "./ResultCardSkeleton";
 import type { VideoResult } from "@/lib/videoApi";
 
 export type Job = {
@@ -36,6 +37,12 @@ export default function JobCard({
     onSubmit();
   }
 
+  // 1. Show the Ghost Skeleton while loading
+  if (job.loading) {
+    return <ResultCardSkeleton />;
+  }
+
+  // 2. Show the Result when finished
   if (job.result) {
     return (
       <ResultCard
@@ -48,6 +55,7 @@ export default function JobCard({
     );
   }
 
+  // 3. Show the Input form by default
   return (
     <div className="relative">
       {onRemove && (

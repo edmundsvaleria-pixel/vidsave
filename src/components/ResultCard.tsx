@@ -13,6 +13,7 @@ type Props = {
   onRemove?: () => void;
 };
 
+// Custom Spinner Component
 function Spinner({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden="true">
@@ -63,7 +64,7 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
-  // ── Pro Features State ──
+  // Pro Features State
   const [metadataLoading, setMetadataLoading] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   
@@ -115,7 +116,6 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
     setDownloadingAll(false); setDownloadProgress(0);
   }
 
-  // ── Pro Feature Handlers ──
   async function handleGetMetadata() {
     setMetadataLoading(true);
     try {
@@ -158,13 +158,18 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
       <div className="flex flex-col gap-5 sm:flex-row">
         {(processedImage || result.thumbnail) && (
           <div className="w-full shrink-0 sm:w-40">
-            <div className="aspect-square overflow-hidden rounded-lg border border-[#27272A] bg-black sm:aspect-video relative">
+            <div className={`aspect-square overflow-hidden rounded-lg border border-[#27272A] bg-black sm:aspect-video relative transition-opacity duration-300 ${textRemovalLoading ? 'opacity-50' : 'opacity-100'}`}>
               <img
                 src={processedImage || result.thumbnail}
                 alt="Thumbnail"
                 className="h-full w-full object-cover"
               />
-              {processedImage && (
+              {textRemovalLoading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+                  <Spinner size={24} />
+                </div>
+              )}
+              {processedImage && !textRemovalLoading && (
                 <div className="absolute top-2 right-2 bg-[#3B82F6] text-white text-[8px] font-bold px-2 py-1 rounded">TEXT REMOVED</div>
               )}
             </div>
@@ -234,8 +239,15 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
                   )}
                 </div>
                 
-                {/* Metadata Display */}
-                {metadata && (
+                {/* Metadata Skeleton & Display */}
+                {metadataLoading && (
+                  <div className="mt-3 space-y-2 p-3 bg-[#141416] border border-[#27272A] rounded-lg">
+                    <div className="h-3 w-1/2 animate-pulse bg-[#27272A] rounded" />
+                    <div className="h-3 w-1/3 animate-pulse bg-[#27272A] rounded" />
+                  </div>
+                )}
+                
+                {metadata && !metadataLoading && (
                   <div className="mt-3 bg-[#141416] border border-[#27272A] rounded-lg p-3 text-[11px] text-[#A1A1AA]">
                     <p><strong className="text-white">Views:</strong> {metadata.views?.toLocaleString() || "N/A"}</p>
                     <p><strong className="text-white">Likes:</strong> {metadata.likes?.toLocaleString() || "N/A"}</p>

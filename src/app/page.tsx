@@ -6,6 +6,7 @@ import { useSearchParams } from "next/navigation";
 import JobCard, { type Job } from "@/components/JobCard";
 import PlatformIcons from "@/components/PlatformIcons";
 import RecentDownloads from "@/components/RecentDownloads";
+import { createClient } from "@/utils/supabase/client";
 import type { VideoResult } from "@/lib/videoApi";
 
 function makeJob(url = ""): Job {
@@ -29,7 +30,30 @@ function saveRecent(url: string) {
 function HomeContent() {
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>(() => [makeJob()]);
+  
+  // Auth State
+  const [user, setUser] = useState<any>(null);
+  const supabase = createClient();
 
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => {
+      authListener.subscription.unsubscribe();
+    };
+  }, [supabase.auth]);
+
+  // Handle Shared Link from PWA
   useEffect(() => {
     const sharedUrl = searchParams.get("url") || searchParams.get("text");
     if (sharedUrl) {
@@ -100,11 +124,26 @@ function HomeContent() {
             <a href="/instagram" className="transition-colors hover:text-white">Instagram</a>
             <a href="/youtube" className="transition-colors hover:text-white">YouTube</a>
             <a href="/x" className="transition-colors hover:text-white">X</a>
+            <a href="/pricing" className="transition-colors hover:text-white text-[#3B82F6]">Pricing</a>
             <a href="/contact" className="transition-colors hover:text-white">Contact</a>
           </nav>
-          <a href="#download" className="rounded-lg bg-[#3B82F6] px-4 py-2 text-[11px] font-semibold text-white transition-transform hover:scale-105 hover:bg-[#2563EB]">
-            Start Downloading
-          </a>
+          
+          {/* Auth Section */}
+          {user ? (
+            <div className="flex items-center gap-4">
+              <span className="text-[11px] text-[#A1A1AA] hidden sm:block">{user.email}</span>
+              <button 
+                onClick={async () => { await supabase.auth.signOut(); window.location.reload(); }}
+                className="rounded-lg border border-[#27272A] bg-transparent px-4 py-2 text-[11px] font-semibold text-white hover:bg-white hover:text-black transition-colors"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <a href="/login" className="rounded-lg bg-[#3B82F6] px-4 py-2 text-[11px] font-semibold text-white transition-transform hover:scale-105 hover:bg-[#2563EB]">
+              Sign In
+            </a>
+          )}
         </div>
       </header>
 
@@ -159,6 +198,7 @@ function HomeContent() {
           <div className="flex gap-4 text-[12px] text-[#A1A1AA]">
             <a href="/legal/terms" className="hover:text-white transition-colors">Terms</a>
             <a href="/legal/privacy" className="hover:text-white transition-colors">Privacy</a>
+            <a href="/pricing" className="hover:text-white transition-colors">Pricing</a>
             <a href="/contact" className="hover:text-white transition-colors">Contact</a>
           </div>
         </div>
