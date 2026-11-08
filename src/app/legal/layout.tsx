@@ -1,4 +1,4 @@
-// src/app/legal/layout.tsx
+﻿// src/app/legal/layout.tsx
 import Link from "next/link";
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
@@ -8,10 +8,10 @@ export default function LegalLayout({ children }: { children: React.ReactNode })
         <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-6">
           <Link href="/" className="flex items-center gap-2.5 hover:opacity-80 transition-opacity">
             <div className="h-2 w-2 rounded-full bg-[#3B82F6]" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white">VidSave</span>
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-white">SwiftSave</span>
           </Link>
           <Link href="/" className="text-[10px] uppercase tracking-[0.2em] text-[#A1A1AA] hover:text-white transition-colors">
-            ← Back to App
+            â† Back to App
           </Link>
         </div>
       </header>

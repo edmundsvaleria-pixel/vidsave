@@ -17,7 +17,14 @@ declare module "@paystack/inline-js" {
     onCancel?: () => void;
   }
 
+  export interface PaystackResumeOptions {
+    onSuccess?: (transaction: PaystackTransaction) => void;
+    onCancel?: () => void;
+    onError?: (error: any) => void;
+  }
+
   export default class PaystackPop {
     newTransaction(options: PaystackOptions): void;
+    resumeTransaction(accessCode: string, options?: PaystackResumeOptions): void;
   }
 }

@@ -1,4 +1,4 @@
-// src/components/RecentDownloads.tsx
+﻿// src/components/RecentDownloads.tsx
 "use client";
 
 import { useEffect, useState } from "react";
@@ -14,7 +14,8 @@ export default function RecentDownloads({ onSelect }: Props) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("vidsave_recent");
+      // Updated to use the SwiftSave key
+      const stored = localStorage.getItem("swiftsave_recent");
       if (stored) setRecent(JSON.parse(stored));
     } catch { /* ignore */ }
   }, []);
@@ -30,10 +31,10 @@ export default function RecentDownloads({ onSelect }: Props) {
         </div>
         <button
           onClick={() => {
-            localStorage.removeItem("vidsave_recent");
+            localStorage.removeItem("swiftsave_recent");
             setRecent([]);
           }}
-          className="text-[9px] uppercase tracking-[0.15em] text-[#f5f3ef]/30 hover:text-red-400"
+          className="text-[9px] uppercase tracking-[0.15em] text-[#f5f3ef]/30 hover:text-red-400 transition-colors"
         >
           Clear
         </button>
@@ -45,12 +46,12 @@ export default function RecentDownloads({ onSelect }: Props) {
             <button
               key={`${url}-${i}`}
               onClick={() => onSelect(url)}
-              className="group flex items-center justify-between border border-[#d4af37]/10 bg-[#d4af37]/[0.02] px-3 py-2 text-left transition-colors hover:border-[#d4af37]/30 hover:bg-[#d4af37]/5"
+              className="group flex items-center justify-between border border-[#27272A] bg-[#0A0A0A] px-3 py-2 text-left transition-colors hover:border-[#3B82F6]/50 rounded-lg"
             >
-              <span className="truncate pr-4 text-[11px] text-[#f5f3ef]/60 group-hover:text-[#f5f3ef]">
+              <span className="truncate pr-4 text-[11px] text-[#A1A1AA] group-hover:text-white">
                 {url}
               </span>
-              <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#d4af37]/50 group-hover:text-[#d4af37]">
+              <span className="shrink-0 text-[9px] font-semibold uppercase tracking-[0.15em] text-[#3B82F6]/70 group-hover:text-[#3B82F6]">
                 {PLATFORM_LABELS[platform]}
               </span>
             </button>

@@ -1,4 +1,4 @@
-// src/app/legal/privacy/page.tsx
+﻿// src/app/legal/privacy/page.tsx
 export default function PrivacyPage() {
   return (
     <div>
@@ -6,7 +6,7 @@ export default function PrivacyPage() {
       <p className="mb-8 text-[12px] uppercase tracking-[0.2em] text-[#3B82F6]">Last Updated: October 2026</p>
 
       <p className="mb-6">
-        At VidSave, we take your privacy seriously. This policy explains what data we collect and how it is used.
+        At SwiftSave, we take your privacy seriously. This policy explains what data we collect and how it is used.
       </p>
 
       <h2 className="mb-4 mt-8 text-xl text-white">1. Information We Collect</h2>

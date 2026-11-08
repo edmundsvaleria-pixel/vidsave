@@ -1,4 +1,4 @@
-// src/app/contact/page.tsx
+﻿// src/app/contact/page.tsx
 "use client";
 
 import { useState } from "react";
@@ -47,7 +47,7 @@ export default function ContactPage() {
         )}
 
         <div className="mt-6 text-center">
-          <a href="/" className="text-[11px] text-[#A1A1AA] hover:text-white transition-colors">← Back to VidSave</a>
+          <a href="/" className="text-[11px] text-[#A1A1AA] hover:text-white transition-colors">â† Back to SwiftSave</a>
         </div>
       </div>
     </div>

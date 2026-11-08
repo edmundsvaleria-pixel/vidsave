@@ -1,4 +1,4 @@
-// src/app/api/download-file/route.ts
+﻿// src/app/api/download-file/route.ts
 import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -8,7 +8,7 @@ export const maxDuration = 60;
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const fileUrl = searchParams.get("url");
-  const rawFilename = searchParams.get("filename") || "VidSave";
+  const rawFilename = searchParams.get("filename") || "SwiftSave";
   const fileType = searchParams.get("type") || "video";
 
   if (!fileUrl) {
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     if (contentLength) headers.set("Content-Length", contentLength);
 
     // Clean up the title so it is a safe filename (removes emojis/slashes)
-    const safeFilename = rawFilename.replace(/[^a-zA-Z0-9 -_]/g, "").trim() || "VidSave";
+    const safeFilename = rawFilename.replace(/[^a-zA-Z0-9 -_]/g, "").trim() || "SwiftSave";
     
     // Force the correct file extension
     let ext = ".mp4";

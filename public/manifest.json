@@ -1,6 +1,6 @@
-{
-  "name": "VidSave",
-  "short_name": "VidSave",
+﻿{
+  "name": "SwiftSave",
+  "short_name": "SwiftSave",
   "description": "Premium Video Downloader",
   "start_url": "/",
   "display": "standalone",
@@ -12,15 +12,5 @@
       "sizes": "any",
       "type": "image/svg+xml"
     }
-  ],
-  "share_target": {
-    "action": "/",
-    "method": "GET",
-    "enctype": "application/x-www-form-urlencoded",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "url": "url"
-    }
-  }
+  ]
 }

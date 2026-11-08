@@ -17,12 +17,12 @@ function makeJob(): Job {
 
 function saveRecent(url: string) {
   try {
-    const stored = localStorage.getItem("vidsave_recent");
+    const stored = localStorage.getItem("swiftsave_recent");
     let recent: string[] = stored ? JSON.parse(stored) : [];
     recent = recent.filter((u) => u !== url);
     recent.unshift(url);
     recent = recent.slice(0, 5);
-    localStorage.setItem("vidsave_recent", JSON.stringify(recent));
+    localStorage.setItem("swiftsave_recent", JSON.stringify(recent));
   } catch { /* ignore */ }
 }
 
@@ -36,7 +36,7 @@ export default function PlatformPage() {
   // Update document title based on platform
   useEffect(() => {
     if (platformName) {
-      document.title = `${platformName} Video Downloader | VidSave`;
+      document.title = `${platformName} Video Downloader | swiftsave`;
     }
   }, [platformName]);
 
@@ -79,7 +79,7 @@ export default function PlatformPage() {
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <a href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
             <div className="h-2 w-2 rounded-full bg-[#3B82F6] shadow-[0_0_10px_#3B82F6]" />
-            <span className="text-[13px] font-bold tracking-tight text-white">VidSave</span>
+            <span className="text-[13px] font-bold tracking-tight text-white">swiftsave</span>
           </a>
           <nav className="hidden items-center gap-6 text-[12px] font-medium text-[#A1A1AA] sm:flex">
             <a href="/tiktok" className="transition-colors hover:text-white">TikTok</a>
@@ -124,9 +124,9 @@ export default function PlatformPage() {
         <div className="mx-auto max-w-6xl px-6 flex flex-col items-center justify-between gap-6 sm:flex-row">
           <div className="flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-[#3B82F6]" />
-            <span className="text-[14px] font-bold text-white">VidSave</span>
+            <span className="text-[14px] font-bold text-white">swiftsave</span>
           </div>
-          <p className="text-[12px] text-[#A1A1AA]">© 2026 VidSave. For personal, non-commercial use only.</p>
+          <p className="text-[12px] text-[#A1A1AA]">© 2026 swiftsave. For personal, non-commercial use only.</p>
         </div>
       </footer>
     </div>

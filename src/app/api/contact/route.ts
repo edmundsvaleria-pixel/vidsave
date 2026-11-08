@@ -1,4 +1,4 @@
-// src/app/api/contact/route.ts
+﻿// src/app/api/contact/route.ts
 import { NextResponse } from "next/server";
 import { Resend } from "resend";
 
@@ -18,16 +18,16 @@ export async function POST(request: Request) {
       );
     }
 
-    // ⚠️ IMPORTANT: This MUST be the email you signed up to Resend with.
+    // âš ï¸ IMPORTANT: This MUST be the email you signed up to Resend with.
     const toEmail = "ygakharter@gmail.com"; 
 
     const { data, error } = await resend.emails.send({
       to: toEmail,
       
-      // ⚠️ Using your specific Resend test domain
-      from: "VidSave Contact <anything@uutreneozo.resend.app>", 
+      // âš ï¸ Using your specific Resend test domain
+      from: "SwiftSave Contact <anything@uutreneozo.resend.app>", 
       
-      subject: `New VidSave Message from ${email}`,
+      subject: `New SwiftSave Message from ${email}`,
       html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
           <h2 style="color: #3B82F6;">New Contact Form Submission</h2>
