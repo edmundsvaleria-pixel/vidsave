@@ -18,7 +18,6 @@ function makeJob(url = ""): Job {
 
 function saveRecent(url: string) {
   try {
-    // Updated to use the SwiftSave key
     const stored = localStorage.getItem("swiftsave_recent");
     let recent: string[] = stored ? JSON.parse(stored) : [];
     recent = recent.filter((u) => u !== url);
@@ -32,7 +31,6 @@ function HomeContent() {
   const searchParams = useSearchParams();
   const [jobs, setJobs] = useState<Job[]>(() => [makeJob()]);
   
-  // Auth State
   const [user, setUser] = useState<any>(null);
   const supabase = createClient();
 
@@ -44,17 +42,12 @@ function HomeContent() {
     getUser();
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-      }
+      (event, session) => { setUser(session?.user ?? null); }
     );
 
-    return () => {
-      authListener.subscription.unsubscribe();
-    };
+    return () => { authListener.subscription.unsubscribe(); };
   }, [supabase.auth]);
 
-  // Handle Shared Link from PWA
   useEffect(() => {
     const sharedUrl = searchParams.get("url") || searchParams.get("text");
     if (sharedUrl) {
@@ -129,7 +122,6 @@ function HomeContent() {
             <a href="/contact" className="transition-colors hover:text-white">Contact</a>
           </nav>
           
-          {/* Auth Section */}
           {user ? (
             <div className="flex items-center gap-4">
               <span className="text-[11px] text-[#A1A1AA] hidden sm:block">{user.email}</span>
