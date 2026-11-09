@@ -17,19 +17,19 @@ export async function POST(req: Request) {
 
     // Map the plan to the correct Paystack code AND the amount in Pesewas
     if (plan === "pro") {
-      planCode = "PLN_i9ntuvjgna5o4az"; // Your Pro code
+      planCode = "PLN_i9ntuvjgna5o4az"; 
       amount = 3990; // GHS 39.90
     }
     if (plan === "pro_plus") {
-      planCode = "PLN_x5lb8v28z5f7e5n"; // Your Pro Plus code
+      planCode = "PLN_x5lb8v28z5f7e5n"; 
       amount = 9990; // GHS 99.90
     }
     if (plan === "api_pro") {
-      planCode = "PLN_0h8k11989tvifig"; // Your API Pro code
+      planCode = "PLN_0h8k11989tvifig"; 
       amount = 29000; // GHS 290.00
     }
     if (plan === "api_enterprise") {
-      planCode = "PLN_a3fep60maqk5g0m"; // Your API Enterprise code
+      planCode = "PLN_a3fep60maqk5g0m"; 
       amount = 99000; // GHS 990.00
     }
 
@@ -45,10 +45,12 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email: user.email,
-        amount: amount, // Sending amount explicitly
-        currency: "GHS", // Forcing GHS
-        plan: planCode, // The plan code
+        amount: amount, 
+        currency: "GHS", 
+        plan: planCode, 
         metadata: { user_id: user.id, plan: plan },
+        // FORCE THE PAYMENT CHANNELS
+        channels: ["card", "mobile_money", "bank_transfer"] 
       }),
     });
 
