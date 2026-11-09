@@ -8,12 +8,12 @@ import Link from "next/link";
 
 export default function PricingPage() {
   const [isYearly, setIsYearly] = useState(false);
-  const [loading, setLoading] = useState<string | null>(null);
+  const [isProcessingPayment, setIsProcessingPayment] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const router = useRouter();
 
   async function handlePayment(plan: "pro" | "pro_plus") {
-    setLoading(plan);
+    setIsProcessingPayment(plan);
     setErrorMsg(null);
 
     try {
@@ -29,8 +29,9 @@ export default function PricingPage() {
       const { default: PaystackPop } = await import("@paystack/inline-js");
       const popup = new PaystackPop();
 
-      // Paystack recognizes this as a subscription because of the access_code
       popup.resumeTransaction(data.access_code, {
+        // Force the payment channels in the popup
+        channels: ["card", "mobile_money", "bank_transfer"],
         onSuccess: async (transaction: any) => {
           const verifyRes = await fetch("/api/paystack/verify", {
             method: "POST",
@@ -44,15 +45,15 @@ export default function PricingPage() {
           } else {
             setErrorMsg("Payment verification failed. Please contact support.");
           }
-          setLoading(null);
+          setIsProcessingPayment(null);
         },
         onCancel: () => {
-          setLoading(null);
+          setIsProcessingPayment(null);
         },
       });
     } catch (err: any) {
       setErrorMsg(err.message);
-      setLoading(null);
+      setIsProcessingPayment(null);
     }
   }
 
@@ -67,10 +68,16 @@ export default function PricingPage() {
       <div className="mx-auto max-w-6xl pt-10">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#27272A] bg-[#141416] px-3 py-1 text-[11px] font-medium text-[#A1A1AA] mb-6">
-            <ShieldCheck size={14} className="text-[#3B82F6]" /> Secure checkout via Paystack
+            <ShieldCheck size={14} className="text-[#3B82F6]" />
+            Secure checkout via Paystack
           </div>
           <h1 className="heading-display text-5xl text-white mb-4">Upgrade to SwiftSave Pro</h1>
           <p className="text-[15px] text-[#A1A1AA] mb-8">Choose the plan that fits your needs. Cancel anytime.</p>
+          
+          <div className="inline-flex items-center gap-4 bg-[#141416] border border-[#27272A] rounded-full p-1">
+            <button onClick={() => setIsYearly(false)} className={`px-6 py-2 rounded-full text-[12px] font-semibold transition-colors ${!isYearly ? 'bg-[#27272A] text-white' : 'text-[#A1A1AA] hover:text-white'}`}>Monthly</button>
+            <button onClick={() => setIsYearly(true)} className={`px-6 py-2 rounded-full text-[12px] font-semibold transition-colors flex items-center gap-2 ${isYearly ? 'bg-[#27272A] text-white' : 'text-[#A1A1AA] hover:text-white'}`}>Yearly <span className="bg-green-500/20 text-green-400 px-2 py-0.5 rounded text-[9px]">Save 20%</span></button>
+          </div>
         </div>
 
         {errorMsg && (
@@ -101,15 +108,17 @@ export default function PricingPage() {
             </div>
             <h2 className="text-xl font-bold text-white mb-2">Pro</h2>
             <p className="text-[13px] text-[#A1A1AA] mb-6">For power users and creators.</p>
-            <div className="text-4xl font-bold text-white mb-8">$3.99<span className="text-[14px] text-[#A1A1AA] font-normal">/mo</span></div>
+            <div className="text-4xl font-bold text-white mb-8">
+              ${isYearly ? "38" : "3.99"}<span className="text-[14px] text-[#A1A1AA] font-normal">/{isYearly ? "yr" : "mo"}</span>
+            </div>
             <ul className="space-y-3 mb-8 flex-1">
               <li className="flex items-center gap-3 text-[13px] text-white"><Check size={16} className="text-[#3B82F6] shrink-0" /> 100 downloads per day</li>
               <li className="flex items-center gap-3 text-[13px] text-white"><Check size={16} className="text-[#3B82F6] shrink-0" /> Up to 1080p quality</li>
               <li className="flex items-center gap-3 text-[13px] text-white"><Check size={16} className="text-[#3B82F6] shrink-0" /> Batch Mode (5 links)</li>
               <li className="flex items-center gap-3 text-[13px] text-white"><Check size={16} className="text-[#3B82F6] shrink-0" /> Pro Tools (Stats/Text)</li>
             </ul>
-            <button onClick={() => handlePayment("pro")} disabled={loading !== null} className="w-full py-3 rounded-lg bg-[#3B82F6] text-white font-semibold text-[13px] hover:bg-[#2563EB] transition-colors shadow-[0_0_15px_rgba(59,130,246,0.4)] disabled:opacity-50">
-              {loading === "pro" ? "Opening Checkout..." : "Upgrade to Pro"}
+            <button onClick={() => handlePayment("pro")} disabled={isProcessingPayment !== null} className="w-full py-3 rounded-lg bg-[#3B82F6] text-white font-semibold text-[13px] hover:bg-[#2563EB] transition-colors shadow-[0_0_15px_rgba(59,130,246,0.4)] disabled:opacity-50">
+              {isProcessingPayment === "pro" ? "Opening Checkout..." : "Upgrade to Pro"}
             </button>
           </div>
 
@@ -117,15 +126,17 @@ export default function PricingPage() {
           <div className="border border-[#27272A] bg-[#0A0A0A] rounded-2xl p-8 flex flex-col h-full">
             <h2 className="text-xl font-bold text-white mb-2">Pro Plus</h2>
             <p className="text-[13px] text-[#A1A1AA] mb-6">For agencies and heavy usage.</p>
-            <div className="text-4xl font-bold text-white mb-8">$9.99<span className="text-[14px] text-[#A1A1AA] font-normal">/mo</span></div>
+            <div className="text-4xl font-bold text-white mb-8">
+              ${isYearly ? "95" : "9.99"}<span className="text-[14px] text-[#A1A1AA] font-normal">/{isYearly ? "yr" : "mo"}</span>
+            </div>
             <ul className="space-y-3 mb-8 flex-1">
               <li className="flex items-center gap-3 text-[13px] text-[#A1A1AA]"><Check size={16} className="text-green-500 shrink-0" /> Unlimited downloads*</li>
               <li className="flex items-center gap-3 text-[13px] text-[#A1A1AA]"><Check size={16} className="text-green-500 shrink-0" /> Up to 4K / 8K quality</li>
               <li className="flex items-center gap-3 text-[13px] text-[#A1A1AA]"><Check size={16} className="text-green-500 shrink-0" /> Batch Mode (20 links)</li>
               <li className="flex items-center gap-3 text-[13px] text-[#A1A1AA]"><Check size={16} className="text-green-500 shrink-0" /> Priority API Queue</li>
             </ul>
-            <button onClick={() => handlePayment("pro_plus")} disabled={loading !== null} className="w-full py-3 rounded-lg border border-[#27272A] text-white font-semibold text-[13px] hover:bg-[#1A1A1C] transition-colors disabled:opacity-50">
-              {loading === "pro_plus" ? "Opening Checkout..." : "Upgrade to Pro Plus"}
+            <button onClick={() => handlePayment("pro_plus")} disabled={isProcessingPayment !== null} className="w-full py-3 rounded-lg border border-[#27272A] text-white font-semibold text-[13px] hover:bg-[#1A1A1C] transition-colors disabled:opacity-50">
+              {isProcessingPayment === "pro_plus" ? "Opening Checkout..." : "Upgrade to Pro Plus"}
             </button>
           </div>
         </div>

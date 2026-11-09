@@ -114,6 +114,8 @@ export default function DevelopersPage() {
       const popup = new PaystackPop();
 
       popup.resumeTransaction(data.access_code, {
+        // Force the payment channels in the popup
+        channels: ["card", "mobile_money", "bank_transfer"],
         onSuccess: async (transaction: any) => {
           const verifyRes = await fetch("/api/paystack/verify", {
             method: "POST",
@@ -199,7 +201,6 @@ export default function DevelopersPage() {
           <div className="border border-[#3B82F6]/40 bg-[#0A0A0A] rounded-xl p-6 flex flex-col relative shadow-[0_0_30px_rgba(59,130,246,0.1)]">
             <div className="absolute top-0 right-0 bg-[#3B82F6] text-white text-[9px] font-bold px-3 py-1 rounded-bl-lg">POPULAR</div>
             <h3 className="text-white font-semibold mb-1">Pro</h3>
-            {/* USD DISPLAYED HERE */}
             <div className="text-2xl font-bold text-white mb-4">$29<span className="text-sm text-[#A1A1AA] font-normal">/mo</span></div>
             <p className="text-[12px] text-[#A1A1AA] mb-4">For production bots and apps.</p>
             <div className="mt-auto pt-4 border-t border-[#27272A]">
@@ -216,7 +217,6 @@ export default function DevelopersPage() {
 
           <div className="border border-[#27272A] bg-[#0A0A0A] rounded-xl p-6 flex flex-col">
             <h3 className="text-white font-semibold mb-1">Enterprise</h3>
-            {/* USD DISPLAYED HERE */}
             <div className="text-2xl font-bold text-white mb-4">$99<span className="text-sm text-[#A1A1AA] font-normal">/mo</span></div>
             <p className="text-[12px] text-[#A1A1AA] mb-4">For high-traffic services.</p>
             <div className="mt-auto pt-4 border-t border-[#27272A]">

@@ -13,11 +13,13 @@ declare module "@paystack/inline-js" {
     accessCode?: string;
     email?: string;
     amount?: number;
+    channels?: string[]; // <-- ADDED
     onSuccess?: (transaction: PaystackTransaction) => void;
     onCancel?: () => void;
   }
 
   export interface PaystackResumeOptions {
+    channels?: string[]; // <-- ADDED
     onSuccess?: (transaction: PaystackTransaction) => void;
     onCancel?: () => void;
     onError?: (error: any) => void;
