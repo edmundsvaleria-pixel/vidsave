@@ -4,6 +4,7 @@
 import { useState } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { useRouter } from "next/navigation";
+import { Eye, EyeOff } from "lucide-react";
 
 function Spinner({ size = 13 }: { size?: number }) {
   return (
@@ -16,6 +17,8 @@ function Spinner({ size = 13 }: { size?: number }) {
 export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // New state for the eye icon
+  
   const [loadingEmail, setLoadingEmail] = useState(false);
   const [loadingOAuth, setLoadingOAuth] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -30,7 +33,6 @@ export default function SignupPage() {
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    // Standard Email + Password Signup
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -43,7 +45,6 @@ export default function SignupPage() {
       setErrorMsg(error.message);
       setLoadingEmail(false);
     } else {
-      // Show success message telling them to check their email
       setSuccessMsg("Account created! Please check your email to verify your account.");
       setEmail("");
       setPassword("");
@@ -71,7 +72,6 @@ export default function SignupPage() {
         <h1 className="heading-display text-3xl text-white mb-2">Create an account</h1>
         <p className="text-[13px] text-[#A1A1AA] mb-8">Sign up to save your downloads and unlock Pro tools.</p>
 
-        {/* OAuth Buttons */}
         <div className="flex flex-col gap-3 mb-6">
           <button onClick={() => handleOAuth("google")} disabled={loadingOAuth !== null || loadingEmail} className="flex items-center justify-center gap-3 rounded-lg border border-[#27272A] bg-[#0A0A0A] px-4 py-3 text-[13px] font-medium text-white hover:bg-[#1A1A1C] disabled:opacity-50 transition-colors">
             {loadingOAuth === "google" ? <Spinner size={18} /> : (
@@ -111,16 +111,31 @@ export default function SignupPage() {
               className="w-full rounded-lg border border-[#27272A] bg-[#0A0A0A] px-4 py-3 text-[13px] text-white placeholder-[#555555] focus:border-[#3B82F6] focus:outline-none"
             />
           </div>
+          
           <div>
-            <input
-              type="password"
-              placeholder="Create a password (min 6 chars)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full rounded-lg border border-[#27272A] bg-[#0A0A0A] px-4 py-3 text-[13px] text-white placeholder-[#555555] focus:border-[#3B82F6] focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="Create a password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8} // Updated to match Supabase
+                className="w-full rounded-lg border border-[#27272A] bg-[#0A0A0A] px-4 py-3 text-[13px] text-white placeholder-[#555555] focus:border-[#3B82F6] focus:outline-none"
+              />
+              {/* The Eye Icon */}
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#555555] hover:text-white"
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {/* Password Requirements Text */}
+            <p className="mt-1.5 text-[10px] text-[#A1A1AA]">
+              Must be at least 8 characters and include uppercase, lowercase, and a number.
+            </p>
           </div>
 
           {errorMsg && <p className="text-[12px] text-red-400 bg-red-500/10 p-2 rounded">{errorMsg}</p>}

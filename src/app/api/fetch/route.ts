@@ -4,6 +4,7 @@ import { fetchVideoInfo, type VideoResult } from "@/lib/videoApi";
 import { rateLimit } from "@/lib/rateLimit";
 import { cacheGet, cacheSet, DEFAULT_TTL_MS } from "@/lib/cache";
 import { checkAndIncrementQuota } from "@/lib/quota";
+import { createClient } from "@/utils/supabase/server";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -111,13 +112,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // 3. CHECK QUOTA
+  // 3. CHECK AUTHENTICATION (NEW)
+  // This blocks anyone trying to bypass the frontend without signing in
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return NextResponse.json(
+      { error: "You must be signed in to use SwiftSave." },
+      { status: 401 }
+    );
+  }
+
+  // 4. CHECK QUOTA
   const quota = await checkAndIncrementQuota();
   if (!quota.allowed) {
     return NextResponse.json({ error: quota.error }, { status: 403 });
   }
 
-  // 4. Cache
+  // 5. Cache
   const cacheKey = `fetch:${url}`;
   const cached = cacheGet<VideoResult>(cacheKey);
   if (cached) {
@@ -127,7 +140,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // 5. Upstream (FastSaver)
+  // 6. Upstream (FastSaver)
   try {
     const result = await fetchVideoInfo(url);
     cacheSet(cacheKey, result, DEFAULT_TTL_MS);

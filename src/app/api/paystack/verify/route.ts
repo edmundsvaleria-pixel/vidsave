@@ -19,11 +19,7 @@ export async function POST(req: Request) {
     const data = await res.json();
     
     if (data.status && data.data.status === "success") {
-      const plan = data.data.metadata.plan || "pro";
-      
-      // Upgrade the user's plan in Supabase
-      await supabase.from("profiles").update({ plan }).eq("id", user.id);
-      
+      // The webhook handles the DB update, but we can verify it here too
       return NextResponse.json({ success: true });
     }
     

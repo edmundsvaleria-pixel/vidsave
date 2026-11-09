@@ -2,6 +2,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import ChatWidget from "@/components/ChatWidget";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-body" });
 
@@ -28,14 +29,26 @@ export const metadata: Metadata = {
     googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 },
   },
   openGraph: {
-    type: "website", locale: "en_US", url: "/", siteName: "SwiftSave",
+    type: "website", 
+    locale: "en_US", 
+    url: "/", 
+    siteName: "SwiftSave",
     title: "SwiftSave — Premium Video Downloader",
     description: "Download public videos from TikTok, Instagram, YouTube, Facebook, X, and Suno.",
+    images: [
+      {
+        url: "/opengraph-image", // Explicitly linking the OG image
+        width: 1200,
+        height: 630,
+        alt: "SwiftSave — Premium Video Downloader",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "SwiftSave — Premium Video Downloader",
     description: "Download public videos from TikTok, Instagram, YouTube, Facebook, X, and Suno.",
+    images: ["/opengraph-image"], // Explicitly linking the OG image
   },
 };
 
@@ -50,6 +63,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="en" className={inter.variable}>
       <body className="relative min-h-screen bg-[#0A0A0C] text-[#F5F3EF] antialiased font-sans">
         <div className="relative z-10">{children}</div>
+        <ChatWidget />
       </body>
     </html>
   );

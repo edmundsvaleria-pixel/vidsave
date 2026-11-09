@@ -15,7 +15,7 @@ export type QualityOption = {
   label: string;
   value: string;
   credits: number;
-  filesize: number | null;
+  filesize: number | null; // <-- Added
 };
 
 export type VideoResult = {
@@ -76,7 +76,13 @@ function normalizeFormat(raw: unknown): QualityOption | null {
   if (!match) return null;
 
   const size = typeof f.filesize === "number" ? f.filesize : typeof f.file_size === "number" ? f.file_size : typeof f.size === "number" ? f.size : null;
-  return { label: match.label, value: match.value, credits: match.credits, filesize: size };
+  
+  return { 
+    label: match.label, 
+    value: match.value, 
+    credits: match.credits, 
+    filesize: size // <-- Added
+  };
 }
 
 export async function fetchYouTubeInfo(input: string): Promise<VideoResult> {

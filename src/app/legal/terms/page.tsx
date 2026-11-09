@@ -3,7 +3,7 @@ export default function TermsPage() {
   return (
     <div>
       <h1 className="mb-2 text-3xl text-white">Terms of Service</h1>
-      <p className="mb-8 text-[12px] uppercase tracking-[0.2em] text-[#3B82F6]">Last Updated: October 2026</p>
+      <p className="mb-8 text-[12px] uppercase tracking-[0.2em] text-[#3B82F6]">Last Updated: November 2026</p>
 
       <p className="mb-6">
         Welcome to SwiftSave. By accessing or using our website, you agree to be bound by these Terms of Service. If you do not agree, please do not use the service.
@@ -14,19 +14,22 @@ export default function TermsPage() {
         SwiftSave provides a tool to download publicly available media from various social media platforms. SwiftSave does not host, store, or claim ownership of any of the media downloaded through the service. All files are transferred directly from the original platform's servers to your device.
       </p>
 
-      <h2 className="mb-4 mt-8 text-xl text-white">2. Acceptable Use</h2>
+      <h2 className="mb-4 mt-8 text-xl text-white">2. Acceptable Use & Commercial Subscriptions</h2>
       <p className="mb-6">
         You agree to use SwiftSave only for lawful purposes. You must only download content that you own, have permission to download, or that is explicitly permitted by the platform's terms of service. You may not use this service to infringe upon copyrights, distribute malware, or engage in illegal activities.
+      </p>
+      <p className="mb-6">
+        While the free tier is for personal use, <strong>SwiftSave Pro and Pro Plus are commercial tools</strong> intended for creators, marketers, and agencies to manage their own authorized content. You are solely responsible for ensuring you have the rights to any media you download using a paid subscription.
       </p>
 
       <h2 className="mb-4 mt-8 text-xl text-white">3. Subscriptions and Billing</h2>
       <p className="mb-6">
-        SwiftSave offers a free tier and a premium "Pro" subscription. Subscriptions are billed on a recurring basis (monthly) via our payment provider, Paystack. You may cancel your subscription at any time via your account settings. Refunds are handled in accordance with our refund policy.
+        SwiftSave offers a free tier and premium "Pro" subscription plans. Subscriptions are billed on a recurring basis via our payment provider, Paystack. You may cancel your subscription at any time via your account settings. Refunds are handled in accordance with our refund policy.
       </p>
 
       <h2 className="mb-4 mt-8 text-xl text-white">4. Disclaimer of Warranties</h2>
       <p className="mb-6">
-        The service is provided "as is" without warranties of any kind. We do not guarantee that the service will be uninterrupted, error-free, or that specific platforms will remain supported.
+        The service is provided "as is" without warranties of any kind. We do not guarantee that the service will be uninterrupted, error-free, or that specific platforms will remain supported indefinitely.
       </p>
 
       <h2 className="mb-4 mt-8 text-xl text-white">5. Limitation of Liability</h2>

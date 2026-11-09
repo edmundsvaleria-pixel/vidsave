@@ -17,6 +17,7 @@ export type Job = {
 
 type Props = {
   job: Job;
+  userPlan: string; // <-- Added
   onUrlChange: (url: string) => void;
   onSubmit: () => void;
   onReset: () => void;
@@ -26,6 +27,7 @@ type Props = {
 
 export default function JobCard({
   job,
+  userPlan, // <-- Destructured
   onUrlChange,
   onSubmit,
   onReset,
@@ -37,16 +39,15 @@ export default function JobCard({
     onSubmit();
   }
 
-  // 1. Show the Ghost Skeleton while loading
   if (job.loading) {
     return <ResultCardSkeleton />;
   }
 
-  // 2. Show the Result when finished
   if (job.result) {
     return (
       <ResultCard
         result={job.result}
+        userPlan={userPlan} // <-- Passed down
         sourceUrl={job.url}
         onReset={onReset}
         onAddAnother={onAddAnother}
@@ -55,7 +56,6 @@ export default function JobCard({
     );
   }
 
-  // 3. Show the Input form by default
   return (
     <div className="relative">
       {onRemove && (

@@ -11,8 +11,19 @@ export async function POST(req: Request) {
     }
 
     const { plan } = await req.json();
-    // Amounts in pesewas (GHS 39.90 = 3990)
-    const amount = plan === "pro" ? 3990 : 9990; 
+    
+    // HARDCODED PLAN CODES FOR TESTING
+    let planCode = "";
+    if (plan === "pro") planCode = "PLN_i9ntuvjgna5o4az";
+    if (plan === "pro_plus") planCode = "PLN_x5lb8v28z5f7e5n";
+    if (plan === "api_pro") planCode = "PLN_0h8k11989tvifig";
+    if (plan === "api_enterprise") planCode = "PLN_a3fep60maqk5g0m";
+
+    if (!planCode) {
+      return NextResponse.json({ 
+        error: `Invalid plan selected: ${plan}` 
+      }, { status: 400 });
+    }
 
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
       method: "POST",
@@ -22,20 +33,22 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email: user.email,
-        amount,
-        currency: "GHS",
-        metadata: {
-          user_id: user.id,
-          plan: plan,
-        },
+        plan: planCode,
+        metadata: { user_id: user.id, plan: plan },
       }),
     });
 
     const data = await res.json();
-    if (!data.status) throw new Error(data.message);
+    
+    if (!data.status) {
+      return NextResponse.json({ 
+        error: data.message || "Paystack rejected the transaction" 
+      }, { status: 400 });
+    }
 
     return NextResponse.json({ access_code: data.data.access_code });
   } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("Initialize Error:", error);
+    return NextResponse.json({ error: error.message || "Server error" }, { status: 500 });
   }
 }

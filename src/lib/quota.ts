@@ -2,7 +2,7 @@
 import { createClient } from "@/utils/supabase/server";
 
 export const PLAN_LIMITS = {
-  free: 5,       // <-- Changed to 5
+  free: 5,
   pro: 100,
   pro_plus: 9999,
 };
@@ -17,30 +17,47 @@ export async function checkAndIncrementQuota() {
   }
 
   // 2. Get their profile
-  const { data: profile, error } = await supabase
+  let { data: profile, error } = await supabase
     .from("profiles")
     .select("*")
     .eq("id", user.id)
-    .single();
+    .maybeSingle(); // <-- Changed from .single() to prevent crashes
 
-  if (error || !profile) {
-    return { allowed: false, error: "Could not load user profile." };
+  // 3. If profile is missing (e.g., OAuth signup), create it automatically
+  if (!profile) {
+    const { data: newProfile, error: createError } = await supabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        email: user.email ?? "no-email@provided.com",
+        plan: "free",
+        daily_downloads: 0,
+        last_download_date: new Date().toISOString().split("T")[0],
+      })
+      .select()
+      .single();
+      
+    if (createError) {
+      console.error("Failed to auto-create profile:", createError);
+      return { allowed: false, error: "Could not create user profile." };
+    }
+    profile = newProfile;
   }
 
   const plan = profile.plan || "free";
   const limit = PLAN_LIMITS[plan as keyof typeof PLAN_LIMITS] || 5;
 
-  // 3. Check if it's a new day (reset the counter)
+  // 4. Check if it's a new day (reset the counter)
   const today = new Date().toISOString().split("T")[0];
   const lastDate = profile.last_download_date;
 
-  let currentDownloads = profile.daily_downloads;
+  let currentDownloads = profile.daily_downloads || 0;
 
   if (today !== lastDate) {
     currentDownloads = 0;
   }
 
-  // 4. Check limit
+  // 5. Check limit
   if (currentDownloads >= limit) {
     return { 
       allowed: false, 
@@ -48,7 +65,7 @@ export async function checkAndIncrementQuota() {
     };
   }
 
-  // 5. Increment the counter
+  // 6. Increment the counter
   await supabase
     .from("profiles")
     .update({

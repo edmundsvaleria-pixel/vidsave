@@ -2,18 +2,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { BarChart2, Eraser } from "lucide-react";
+import { BarChart2, Eraser, Lock, Copy, Check } from "lucide-react";
 import type { VideoResult, QualityOption } from "@/lib/videoApi";
 
 type Props = {
   result: VideoResult;
+  userPlan: string;
   sourceUrl: string;
   onReset: () => void;
   onAddAnother?: () => void;
   onRemove?: () => void;
 };
 
-// Custom Spinner Component
 function Spinner({ size = 13 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="animate-spin" aria-hidden="true">
@@ -28,6 +28,13 @@ function pickDefaultFormat(formats: QualityOption[]): string {
     if (formats.find((f) => f.value === v)) return v;
   }
   return formats[formats.length - 1]?.value ?? "";
+}
+
+// NEW: Helper to format bytes into MB or KB
+function formatFileSize(bytes: number | null): string {
+  if (!bytes) return "";
+  if (bytes < 1024 * 1024) return `~${Math.round(bytes / 1024)}KB`;
+  return `~${Math.round(bytes / (1024 * 1024))}MB`;
 }
 
 function getProxyUrl(url: string, title: string, type: "video" | "audio" | "image" = "video") {
@@ -45,11 +52,13 @@ function triggerSave(url: string, title: string, type: "video" | "audio" | "imag
   document.body.removeChild(a);
 }
 
-export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, onRemove }: Props) {
+export default function ResultCard({ result, userPlan, sourceUrl, onReset, onAddAnother, onRemove }: Props) {
   const isSuno = result.platform === "suno";
   const isAudioOnly = isSuno || result.platform === "audiomack" || result.platform === "spotify";
   const isAlbum = result.kind === "album" && result.items.length > 1;
   const isYouTube = result.platform === "youtube" && !!result.formats?.length;
+  
+  const isPro = userPlan === "pro" || userPlan === "pro_plus";
 
   const [audioLoading, setAudioLoading] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -64,12 +73,14 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
   const [downloadingAll, setDownloadingAll] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
 
-  // Pro Features State
   const [metadataLoading, setMetadataLoading] = useState(false);
   const [metadata, setMetadata] = useState<any>(null);
   
   const [textRemovalLoading, setTextRemovalLoading] = useState(false);
   const [processedImage, setProcessedImage] = useState<string | null>(null);
+
+  // NEW: State for Copy Button
+  const [copied, setCopied] = useState(false);
 
   const selectedOpt = result.formats?.find((f) => f.value === selectedFormat);
   const audioHref = result.audioUrl ?? generatedAudio;
@@ -107,11 +118,12 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
   }
 
   async function handleDownloadAll() {
+    if (!isPro) return;
     setDownloadingAll(true); setDownloadProgress(0);
     for (let i = 0; i < result.items.length; i++) {
       triggerSave(result.items[i].url, `${result.title}_${i + 1}`, result.items[i].type);
       setDownloadProgress(i + 1);
-      await new Promise((resolve) => setTimeout(resolve, 1000)); 
+      await new Promise((resolve) => setTimeout(resolve, 2000)); 
     }
     setDownloadingAll(false); setDownloadProgress(0);
   }
@@ -143,6 +155,18 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
     } catch { /* ignore */ } finally { setTextRemovalLoading(false); }
   }
 
+  // NEW: Handle Copy Metadata
+  async function handleCopyMetadata() {
+    const textToCopy = `Title: ${result.title}\nAuthor: ${result.author}\nSource: ${sourceUrl}\n\nDownloaded via SwiftSave`;
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy", err);
+    }
+  }
+
   const kindLabel = result.kind === "album" ? `Album — ${result.items.length} items` : result.kind === "image" ? "Image" : isSuno ? "Song" : "Video";
 
   return (
@@ -159,15 +183,9 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
         {(processedImage || result.thumbnail) && (
           <div className="w-full shrink-0 sm:w-40">
             <div className={`aspect-square overflow-hidden rounded-lg border border-[#27272A] bg-black sm:aspect-video relative transition-opacity duration-300 ${textRemovalLoading ? 'opacity-50' : 'opacity-100'}`}>
-              <img
-                src={processedImage || result.thumbnail}
-                alt="Thumbnail"
-                className="h-full w-full object-cover"
-              />
+              <img src={processedImage || result.thumbnail} alt="Thumbnail" className="h-full w-full object-cover" />
               {textRemovalLoading && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                  <Spinner size={24} />
-                </div>
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40 backdrop-blur-sm"><Spinner size={24} /></div>
               )}
               {processedImage && !textRemovalLoading && (
                 <div className="absolute top-2 right-2 bg-[#3B82F6] text-white text-[8px] font-bold px-2 py-1 rounded">TEXT REMOVED</div>
@@ -189,8 +207,10 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
                     <div className="flex flex-wrap gap-1.5">
                       {result.formats!.map((f) => (
                         <button key={f.value} onClick={() => { setSelectedFormat(f.value); setDlError(null); setFinalUrl(null); }}
-                          className={selectedFormat === f.value ? "border border-[#3B82F6] bg-[#3B82F6] px-3 py-1 text-[11px] font-semibold text-white transition-all" : "border border-[#27272A] px-3 py-1 text-[11px] font-semibold text-[#A1A1AA] transition-all hover:border-[#3B82F6]/50 hover:text-white"}>
-                          {f.label}
+                          className={selectedFormat === f.value ? "border border-[#3B82F6] bg-[#3B82F6] px-3 py-1 text-[11px] font-semibold text-white transition-all flex flex-col items-center" : "border border-[#27272A] px-3 py-1 text-[11px] font-semibold text-[#A1A1AA] transition-all hover:border-[#3B82F6]/50 hover:text-white flex flex-col items-center"}>
+                          <span>{f.label}</span>
+                          {/* NEW: File Size Display */}
+                          {f.filesize && <span className="text-[8px] opacity-70 mt-0.5">{formatFileSize(f.filesize)}</span>}
                         </button>
                       ))}
                     </div>
@@ -222,39 +242,44 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
                 </button>
               )}
 
-              {/* ── PRO FEATURE BUTTONS ── */}
-              <div className="pt-4 mt-2 border-t border-[#27272A]">
-                <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#A1A1AA] mb-3">Utilities</p>
-                <div className="flex gap-2">
-                  <button onClick={handleGetMetadata} disabled={metadataLoading} className="flex-1 flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
-                    {metadataLoading ? <Spinner size={12} /> : <BarChart2 size={13} className="text-[#3B82F6]" />}
-                    <span>Get Stats</span>
-                  </button>
-                  
-                  {result.thumbnail && (
-                    <button onClick={handleRemoveText} disabled={textRemovalLoading} className="flex-1 flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
-                      {textRemovalLoading ? <Spinner size={12} /> : <Eraser size={13} className="text-[#3B82F6]" />}
-                      <span>Remove Text</span>
+              {isPro && (
+                <div className="pt-4 mt-2 border-t border-[#27272A]">
+                  <p className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#A1A1AA] mb-3">Utilities</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button onClick={handleGetMetadata} disabled={metadataLoading} className="flex-1 min-w-[30%] flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
+                      {metadataLoading ? <Spinner size={12} /> : <BarChart2 size={13} className="text-[#3B82F6]" />}
+                      <span>Stats</span>
                     </button>
+                    
+                    {result.thumbnail && (
+                      <button onClick={handleRemoveText} disabled={textRemovalLoading} className="flex-1 min-w-[30%] flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
+                        {textRemovalLoading ? <Spinner size={12} /> : <Eraser size={13} className="text-[#3B82F6]" />}
+                        <span>Clean</span>
+                      </button>
+                    )}
+
+                    {/* NEW COPY METADATA BUTTON */}
+                    <button onClick={handleCopyMetadata} className="flex-1 min-w-[30%] flex h-9 items-center justify-center gap-2 rounded-lg border border-[#27272A] bg-[#141416] text-[11px] font-medium text-white hover:bg-[#1A1A1C] transition-colors">
+                      {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} className="text-[#3B82F6]" />}
+                      <span>{copied ? "Copied" : "Copy"}</span>
+                    </button>
+                  </div>
+                  
+                  {metadataLoading && (
+                    <div className="mt-3 space-y-2 p-3 bg-[#141416] border border-[#27272A] rounded-lg">
+                      <div className="h-3 w-1/2 animate-pulse bg-[#27272A] rounded" />
+                      <div className="h-3 w-1/3 animate-pulse bg-[#27272A] rounded" />
+                    </div>
+                  )}
+                  
+                  {metadata && !metadataLoading && (
+                    <div className="mt-3 bg-[#141416] border border-[#27272A] rounded-lg p-3 text-[11px] text-[#A1A1AA]">
+                      <p><strong className="text-white">Views:</strong> {metadata.views?.toLocaleString() || "N/A"}</p>
+                      <p><strong className="text-white">Likes:</strong> {metadata.likes?.toLocaleString() || "N/A"}</p>
+                    </div>
                   )}
                 </div>
-                
-                {/* Metadata Skeleton & Display */}
-                {metadataLoading && (
-                  <div className="mt-3 space-y-2 p-3 bg-[#141416] border border-[#27272A] rounded-lg">
-                    <div className="h-3 w-1/2 animate-pulse bg-[#27272A] rounded" />
-                    <div className="h-3 w-1/3 animate-pulse bg-[#27272A] rounded" />
-                  </div>
-                )}
-                
-                {metadata && !metadataLoading && (
-                  <div className="mt-3 bg-[#141416] border border-[#27272A] rounded-lg p-3 text-[11px] text-[#A1A1AA]">
-                    <p><strong className="text-white">Views:</strong> {metadata.views?.toLocaleString() || "N/A"}</p>
-                    <p><strong className="text-white">Likes:</strong> {metadata.likes?.toLocaleString() || "N/A"}</p>
-                  </div>
-                )}
-              </div>
-
+              )}
             </div>
           )}
         </div>
@@ -264,9 +289,15 @@ export default function ResultCard({ result, sourceUrl, onReset, onAddAnother, o
         <div className="mt-6">
           <div className="mb-3 flex items-center justify-between">
             <span className="text-[10px] font-medium uppercase tracking-[0.1em] text-[#A1A1AA]">All {result.items.length} items</span>
-            <button onClick={handleDownloadAll} disabled={downloadingAll} className="btn-primary flex h-8 items-center gap-2 px-4 text-[9px] font-bold disabled:cursor-wait disabled:opacity-70">
-              {downloadingAll ? <><Spinner size={11} /> <span>Saving {downloadProgress}/{result.items.length}…</span></> : <><span>Download All</span><span>↓</span></>}
-            </button>
+            {isPro ? (
+              <button onClick={handleDownloadAll} disabled={downloadingAll} className="btn-primary flex h-8 items-center gap-2 px-4 text-[9px] font-bold disabled:cursor-wait disabled:opacity-70">
+                {downloadingAll ? <><Spinner size={11} /> <span>Saving {downloadProgress}/{result.items.length}…</span></> : <><span>Download All</span><span>↓</span></>}
+              </button>
+            ) : (
+              <a href="/pricing" className="flex h-8 items-center gap-2 px-4 rounded-md border border-[#3B82F6]/30 bg-[#3B82F6]/10 text-[9px] font-bold text-[#3B82F6] hover:bg-[#3B82F6]/20 transition-colors">
+                <Lock size={11} /> Pro Required
+              </a>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {result.items.map((item, i) => (

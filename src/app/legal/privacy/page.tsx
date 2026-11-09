@@ -3,7 +3,7 @@ export default function PrivacyPage() {
   return (
     <div>
       <h1 className="mb-2 text-3xl text-white">Privacy Policy</h1>
-      <p className="mb-8 text-[12px] uppercase tracking-[0.2em] text-[#3B82F6]">Last Updated: October 2026</p>
+      <p className="mb-8 text-[12px] uppercase tracking-[0.2em] text-[#3B82F6]">Last Updated: November 2026</p>
 
       <p className="mb-6">
         At SwiftSave, we take your privacy seriously. This policy explains what data we collect and how it is used.
@@ -23,7 +23,7 @@ export default function PrivacyPage() {
 
       <h2 className="mb-4 mt-8 text-xl text-white">3. Cookies</h2>
       <p className="mb-6">
-        We use essential cookies to maintain your login session and local storage to remember your recent downloads. We may also use privacy-conscious analytics (like Vercel Analytics) to understand traffic patterns.
+        We use essential cookies to maintain your login session and local storage to remember your recent downloads. We may also use privacy-conscious analytics to understand traffic patterns.
       </p>
 
       <h2 className="mb-4 mt-8 text-xl text-white">4. Third-Party Services</h2>
