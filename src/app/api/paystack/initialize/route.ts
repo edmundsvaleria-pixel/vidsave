@@ -12,17 +12,29 @@ export async function POST(req: Request) {
 
     const { plan } = await req.json();
     
-    // HARDCODED PLAN CODES FOR TESTING
     let planCode = "";
-    if (plan === "pro") planCode = "PLN_i9ntuvjgna5o4az";
-    if (plan === "pro_plus") planCode = "PLN_x5lb8v28z5f7e5n";
-    if (plan === "api_pro") planCode = "PLN_0h8k11989tvifig";
-    if (plan === "api_enterprise") planCode = "PLN_a3fep60maqk5g0m";
+    let amount = 0;
 
-    if (!planCode) {
-      return NextResponse.json({ 
-        error: `Invalid plan selected: ${plan}` 
-      }, { status: 400 });
+    // Map the plan to the correct Paystack code AND the amount in Pesewas
+    if (plan === "pro") {
+      planCode = "PLN_i9ntuvjgna5o4az"; // Your Pro code
+      amount = 3990; // GHS 39.90
+    }
+    if (plan === "pro_plus") {
+      planCode = "PLN_x5lb8v28z5f7e5n"; // Your Pro Plus code
+      amount = 9990; // GHS 99.90
+    }
+    if (plan === "api_pro") {
+      planCode = "PLN_0h8k11989tvifig"; // Your API Pro code
+      amount = 29000; // GHS 290.00
+    }
+    if (plan === "api_enterprise") {
+      planCode = "PLN_a3fep60maqk5g0m"; // Your API Enterprise code
+      amount = 99000; // GHS 990.00
+    }
+
+    if (!planCode || amount === 0) {
+      return NextResponse.json({ error: `Invalid plan selected: ${plan}` }, { status: 400 });
     }
 
     const res = await fetch("https://api.paystack.co/transaction/initialize", {
@@ -33,7 +45,9 @@ export async function POST(req: Request) {
       },
       body: JSON.stringify({
         email: user.email,
-        plan: planCode,
+        amount: amount, // Sending amount explicitly
+        currency: "GHS", // Forcing GHS
+        plan: planCode, // The plan code
         metadata: { user_id: user.id, plan: plan },
       }),
     });
@@ -41,9 +55,7 @@ export async function POST(req: Request) {
     const data = await res.json();
     
     if (!data.status) {
-      return NextResponse.json({ 
-        error: data.message || "Paystack rejected the transaction" 
-      }, { status: 400 });
+      return NextResponse.json({ error: data.message || "Paystack rejected the transaction" }, { status: 400 });
     }
 
     return NextResponse.json({ access_code: data.data.access_code });
